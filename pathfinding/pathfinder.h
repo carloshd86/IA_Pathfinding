@@ -2,6 +2,8 @@
 #define __PATHFINDER_H__
 
 #include <moaicore/MOAIEntity2D.h>
+#include "GridNode.h"
+#include "PathNode.h"
 
 class Pathfinder: public virtual MOAIEntity2D
 {
@@ -11,17 +13,32 @@ public:
 
 	virtual void DrawDebug();
 
-	void SetStartPosition(float x, float y) { m_StartPosition = USVec2D(x, y); UpdatePath();}
-	void SetEndPosition(float x, float y) { m_EndPosition = USVec2D(x, y); UpdatePath();}
-	const USVec2D& GetStartPosition() const { return m_StartPosition;}
-	const USVec2D& GetEndPosition() const { return m_EndPosition;}
+	void SetStartPosition(float x, float y) { mStartPosition = USVec2D(x, y); UpdatePath();}
+	void SetEndPosition(float x, float y) { mEndPosition = USVec2D(x, y); UpdatePath();}
+	const USVec2D& GetStartPosition() const { return mStartPosition;}
+	const USVec2D& GetEndPosition() const { return mEndPosition;}
 
     bool PathfindStep();
 private:
 	void UpdatePath();
+	void ReadPath(const char* gridFilename, const char* pathCostFilename);
+	void Astar();
+	void GetNodeConnections(const PathNode& pathNode, std::vector<PathNode>& connections);
+	bool IsGridNodeValid(const GridNode& node) const;
+	void BuildPath(const PathNode& lastNode);
+
+	static const int numDirections;
+	static const int dirX[];
+	static const int dirY[];
+
+	std::map<GridNode, int> mGrid;
+	size_t mGridRows;
+	size_t mGridCols;
+	std::vector<GridNode> mPath;
+
 private:
-	USVec2D m_StartPosition;
-	USVec2D m_EndPosition;
+	USVec2D mStartPosition;
+	USVec2D mEndPosition;
 
 	// Lua configuration
 public:

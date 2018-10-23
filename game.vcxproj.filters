@@ -19,6 +19,12 @@
     <ClCompile Include="pathfinding\pathfinder.cpp">
       <Filter>pathfinder</Filter>
     </ClCompile>
+    <ClCompile Include="pathfinding\GridNode.cpp">
+      <Filter>pathfinder</Filter>
+    </ClCompile>
+    <ClCompile Include="pathfinding\PathNode.cpp">
+      <Filter>pathfinder</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="character.h" />
@@ -34,6 +40,12 @@
     </ClInclude>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="pathfinding\pathfinder.h">
+      <Filter>pathfinder</Filter>
+    </ClInclude>
+    <ClInclude Include="pathfinding\GridNode.h">
+      <Filter>pathfinder</Filter>
+    </ClInclude>
+    <ClInclude Include="pathfinding\PathNode.h">
       <Filter>pathfinder</Filter>
     </ClInclude>
   </ItemGroup>
