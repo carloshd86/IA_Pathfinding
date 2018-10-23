@@ -23,9 +23,10 @@ private:
 	void UpdatePath();
 	void ReadPath(const char* gridFilename, const char* pathCostFilename);
 	void Astar();
-	void GetNodeConnections(const PathNode& pathNode, std::vector<PathNode>& connections);
+	void GetNodeConnections(const PathNode& pathNode, std::vector<PathNode*>& connections);
 	bool IsGridNodeValid(const GridNode& node) const;
 	void BuildPath(const PathNode& lastNode);
+	GridNode GetNodeFromScreenPosition(USVec2D& screenPosition);
 
 	static const int numDirections;
 	static const int dirX[];
