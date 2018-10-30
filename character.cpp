@@ -29,10 +29,6 @@ void Character::OnUpdate(float step)
 
 void Character::DrawDebug()
 {
-	MOAIGfxDevice& gfxDevice = MOAIGfxDevice::Get();
-	gfxDevice.SetPenColor(0.0f, 0.0f, 1.0f, 0.5f);
-
-	//MOAIDraw::DrawPoint(0.0f, 0.0f);
 }
 
 
