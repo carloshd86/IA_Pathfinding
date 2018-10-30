@@ -3,7 +3,7 @@
 
 class GridNode {
 public:
-	GridNode(int x, int y) : x(x), y(y) {}
+	GridNode(int x = 0, int y = 0) : x(x), y(y) {}
 
 	int x;
 	int y;

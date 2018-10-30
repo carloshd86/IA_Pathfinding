@@ -4,14 +4,14 @@
 #include <algorithm>
 #include <functional>
 
-
-const int Pathfinder::numDirections = 4;
-const int Pathfinder::dirX[numDirections] = { 1, 0, -1, 0 };
-const int Pathfinder::dirY[numDirections] = { 0, 1, 0, -1 };
+const int Pathfinder::NUM_DIRECTIONS = 4;
+const int Pathfinder::dirX[NUM_DIRECTIONS] = { 1, 0, -1,  0 };
+const int Pathfinder::dirY[NUM_DIRECTIONS] = { 0, 1,  0, -1 };
 
 Pathfinder::Pathfinder() : MOAIEntity2D(),
 	mGridRows(0),
 	mGridCols(0)
+
 {
 	RTTI_BEGIN
 		RTTI_EXTEND(MOAIEntity2D)
@@ -81,50 +81,52 @@ void Pathfinder::ReadPath(const char* gridFilename, const char* pathCostFilename
 
 void Pathfinder::Astar()
 {
-	GridNode startNode = GetNodeFromScreenPosition(mStartPosition);
-	GridNode endNode = GetNodeFromScreenPosition(mEndPosition);
-
-	if (IsGridNodeValid(startNode) && IsGridNodeValid(endNode) && !startNode.Compare(endNode)) {
+	if (IsGridNodeValid(mStartNode) && IsGridNodeValid(mEndNode) && !mStartNode.Compare(mEndNode)) {
 		std::vector<PathNode*> openList;
 		std::vector<PathNode*> closedList;
 
-		PathNode* pathNode = new PathNode(startNode);
+		PathNode* pathNode = new PathNode(mStartNode, 0, CalculateDistance(mStartNode));
 		openList.push_back(pathNode);
-
+		bool existPath = false;
 		while (!openList.empty()) {
-			pathNode = *openList.begin();
+			std::sort(openList.begin(), openList.end(), &Pathfinder::PathNodeSort);
+
+			pathNode = openList.front();
 			openList.erase(openList.begin());
 			closedList.push_back(pathNode);
 
-			if (endNode.Compare(pathNode->node)) {
+			if (mEndNode.Compare(pathNode->node)) {
 				// Node is the end node
 				BuildPath(*pathNode);
-
-				// Releasing memory for stored nodes
-				for (PathNode* toDelete : openList) {
-					delete toDelete;
-				}
-				for (PathNode* toDelete : closedList) {
-					delete toDelete;
-				}
 				return;
 			} else {
 				// Node is not the end node
 				std::vector<PathNode*> connections;
 				GetNodeConnections(*pathNode, connections);
 				for (PathNode* nextPathNode : connections) {
-					if (closedList.end() != std::find_if(closedList.begin(), closedList.end(), std::bind(&PathNode::CompareNodePointer, std::placeholders::_1, nextPathNode))) {
-						// Node already on closedList
-						continue;
+					auto& closedListNodeFound = std::find_if(closedList.begin(), closedList.end(), std::bind(&PathNode::CompareNodePointer, std::placeholders::_1, nextPathNode));
+					if (closedList.end() != closedListNodeFound) {
+						// Node already on closedList. Checking if cost is smaller to remove it and add to open list.
+						if (nextPathNode->g + nextPathNode->h < (*closedListNodeFound)->g + (*closedListNodeFound)->h) {
+							// Removing node from closedList
+							closedList.erase(closedListNodeFound);
+							// Adding the pathNode to openList
+							openList.push_back(nextPathNode);
+						}
+						else {
+							continue;
+						}
 					} else {
+
 						auto& openListNodeFound = std::find_if(openList.begin(), openList.end(), std::bind(&PathNode::CompareNodePointer, std::placeholders::_1, nextPathNode));
 						if (openList.end() != openListNodeFound) {
 							// Change cost and parent if cost is smaller
-							if (nextPathNode->g < (*openListNodeFound)->g) {
+							if (nextPathNode->g + nextPathNode->h < (*openListNodeFound)->g + (*openListNodeFound)->h) {
 								(*openListNodeFound)->g = nextPathNode->g;
+								(*openListNodeFound)->h = nextPathNode->h;
 								(*openListNodeFound)->parent = nextPathNode->parent;
 							}
-							
+
 							// Releasing the node memory as it is nor in openList neither in closedList
 							delete nextPathNode;
 						} else {
@@ -149,11 +151,11 @@ void Pathfinder::Astar()
 void Pathfinder::GetNodeConnections(const PathNode& pathNode, std::vector<PathNode*>& connections) {
 	connections.clear();
 
-	for (int i = 0; i < numDirections; ++i) {
+	for (int i = 0; i < NUM_DIRECTIONS; ++i) {
 		GridNode nextNode(pathNode.node.x + dirX[i], pathNode.node.y + dirY[i]);
 		if (IsGridNodeValid(nextNode)) {
 			int cost = pathNode.g + mGrid[nextNode];
-			connections.push_back(new PathNode(nextNode, cost, cost, &pathNode));
+			connections.push_back(new PathNode(nextNode, cost, CalculateDistance(nextNode), &pathNode));
 		}
 	}
 }
@@ -174,7 +176,7 @@ void Pathfinder::BuildPath(const PathNode& lastNode) {
 	std::reverse(mPath.begin(), mPath.end());
 }
 
-GridNode Pathfinder::GetNodeFromScreenPosition(USVec2D& screenPosition) {
+GridNode Pathfinder::GetNodeFromScreenPosition(const USVec2D& screenPosition) const {
 	GridNode result(0, 0);
 	if (mGridRows && mGridCols) {
 		int left = -512;
@@ -185,6 +187,17 @@ GridNode Pathfinder::GetNodeFromScreenPosition(USVec2D& screenPosition) {
 		result.y = (screenPosition.mY - top) / rowHeight;
 	}
 	return result;
+}
+
+int Pathfinder::CalculateDistance(const GridNode& node) const {
+	int x = mEndNode.x - node.x;
+	int y = mEndNode.y - node.y;
+	int dist = static_cast<int>(sqrtf(x * x + y * y));
+	return dist;
+}
+
+bool Pathfinder::PathNodeSort(PathNode* pathNode1, PathNode* pathNode2) { 
+	return *pathNode1 < *pathNode2; 
 }
 
 void Pathfinder::DrawDebug()
@@ -206,10 +219,10 @@ void Pathfinder::DrawDebug()
 				if (IsGridNodeValid(currentNode)) {
 					switch (mGrid[currentNode]) {
 					case 1:
-						gfxDevice.SetPenColor(0.0f, 0.0f, 0.9f, 0.2f);
+						gfxDevice.SetPenColor(0.2f, 0.2f, 0.9f, 0.2f);
 						break;
 					case 2:
-						gfxDevice.SetPenColor(0.0f, 0.0f, 0.6f, 0.2f);
+						gfxDevice.SetPenColor(0.1f, 0.1f, 0.6f, 0.2f);
 						break;
 					case 3:
 						gfxDevice.SetPenColor(0.0f, 0.0f, 0.3f, 0.2f);
@@ -245,16 +258,14 @@ void Pathfinder::DrawDebug()
 			}
 		}
 
-		GridNode startNode = GetNodeFromScreenPosition(mStartPosition);
 		gfxDevice.SetPenColor(1.0f, 1.0f, 1.0f, 0.75f);
-		int startPointLeft = startNode.x * colWidth + left;
-		int startPointTop = startNode.y * rowHeight + top;
+		int startPointLeft = mStartNode.x * colWidth + left;
+		int startPointTop = mStartNode.y * rowHeight + top;
 		MOAIDraw::DrawRectOutline(startPointLeft, startPointTop, startPointLeft + colWidth, startPointTop + rowHeight);
 
-		GridNode endNode = GetNodeFromScreenPosition(mEndPosition);
 		gfxDevice.SetPenColor(0.0f, 0.75f, 0.0f, 0.75f);
-		int endPointLeft = endNode.x * colWidth + left;
-		int endPointTop = endNode.y * rowHeight + top;
+		int endPointLeft = mEndNode.x * colWidth + left;
+		int endPointTop = mEndNode.y * rowHeight + top;
 		MOAIDraw::DrawRectOutline(endPointLeft, endPointTop, endPointLeft + colWidth, endPointTop + rowHeight);
 
 	}
@@ -265,8 +276,6 @@ bool Pathfinder::PathfindStep()
     // returns true if pathfinding process finished
     return true;
 }
-
-
 
 
 

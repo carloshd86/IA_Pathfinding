@@ -10,6 +10,8 @@ public:
 	static bool CompareNode(const PathNode& pathNode1, const PathNode& pathNode2);
 	static bool CompareNodePointer(const PathNode* pathNode1, const PathNode* pathNode2);
 
+	bool operator<(const PathNode& other) const;
+
 	GridNode node;
 	int g;
 	int h;
